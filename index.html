@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BSCodec Demo – Audio Codec Comparison</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-card: #141a2b;
+      --bg-card-soft: #181f33;
+      --accent: #4fd1c5;
+      --accent-soft: rgba(79, 209, 197, 0.15);
+      --accent-strong: #f6ad55;
+      --text: #e2e8f0;
+      --text-muted: #a0aec0;
+      --border-soft: #2d3748;
+      --danger: #f56565;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1a2238 0, #050814 55%, #020308 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 1200px;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    .title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-main {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: linear-gradient(120deg, var(--accent-soft), rgba(246, 173, 85, 0.16));
+      border: 1px solid rgba(129, 230, 217, 0.4);
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      max-width: 700px;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* 左侧：选择区域 */
+    .panel {
+      background: linear-gradient(145deg, rgba(20, 26, 43, 0.96), rgba(14, 20, 35, 0.98));
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 16px 18px 18px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel + .panel {
+      margin-top: 10px;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .panel-title span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(79, 209, 197, 0.35);
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    select {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+        linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+      background-position: calc(100% - 14px) 11px, calc(100% - 9px) 11px;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(79, 209, 197, 0.7);
+    }
+
+    .sample-meta {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .sample-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      background: rgba(30, 64, 175, 0.25);
+      border: 1px solid rgba(129, 140, 248, 0.45);
+      margin-right: 6px;
+      margin-top: 4px;
+    }
+
+    .sample-tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #818cf8;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 0.75rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+    }
+
+    .legend-swatch ours {
+      background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    }
+
+    .legend-swatch.ref {
+      background: linear-gradient(90deg, #a3bffa, #667eea);
+    }
+
+    .legend-swatch.baseline {
+      background: linear-gradient(90deg, #4b5563, #a0aec0);
+    }
+
+    .note {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* 右侧：播放器区域 */
+    .players {
+      background: linear-gradient(160deg, rgba(11, 15, 30, 0.98), rgba(10, 14, 24, 0.99));
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 12px 14px 16px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .players-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .players-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .current-sample-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      word-break: break-all;
+    }
+
+    .players-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.8rem;
+      align-items: center;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.12s ease-out;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-0.5px);
+    }
+
+    .btn-icon {
+      font-size: 0.9rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
+      color: #0b1020;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .codec-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    @media (min-width: 750px) {
+      .codec-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+    }
+
+    .codec-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 10px 10px 8px;
+      border: 1px solid rgba(55, 65, 81, 0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .codec-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(79, 209, 197, 0.14), transparent 55%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease-out;
+    }
+
+    .codec-card:hover::before {
+      opacity: 1;
+    }
+
+    .codec-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .codec-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .codec-detail {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-ours {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: rgba(129, 230, 217, 0.65);
+    }
+
+    .badge-ref {
+      background: rgba(129, 140, 248, 0.16);
+      color: #c3dafe;
+      border-color: rgba(129, 140, 248, 0.6);
+    }
+
+    .badge-baseline {
+      background: rgba(75, 85, 99, 0.45);
+      color: #e5e7eb;
+      border-color: rgba(148, 163, 184, 0.7);
+    }
+
+    .audio-wrap {
+      background: var(--bg-card-soft);
+      border-radius: 10px;
+      padding: 6px 6px 4px;
+      border: 1px solid rgba(55, 65, 81, 0.8);
+    }
+
+    audio {
+      width: 100%;
+      outline: none;
+    }
+
+    .codec-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      opacity: 0.85;
+    }
+
+    .footer-right {
+      opacity: 0.75;
+    }
+
+    .footer {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="title-row">
+        <h1>
+          BSCodec Audio Demo
+          <span class="badge-main">Codec comparison</span>
+        </h1>
+      </div>
+      <p class="subtitle">
+        Select one audio sample and listen to how different neural codecs (including
+        <strong>BSCodec</strong>) reconstruct it. All codecs are fed with the same source;
+        use your ears to compare artifacts, clarity and spatial details.
+      </p>
+    </header>
+
+    <div class="layout">
+      <!-- 左侧：选择 sample & 说明 -->
+      <div>
+        <section class="panel">
+          <div class="panel-title">
+            <span></span>
+            Audio sample
+          </div>
+          <label for="sample-select">Choose an audio file</label>
+          <select id="sample-select"></select>
+
+          <div class="sample-meta" id="sample-meta"></div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-swatch ref"></span>
+              Reference (ground truth)
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch ours"></span>
+              BSCodec (ours)
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch baseline"></span>
+              Other baselines
+            </div>
+          </div>
+
+          <p class="note">
+            All files share the same filename across folders (e.g.
+            <code>ground_truth/audioset_-0Gj8-vB1q4.wav</code>,
+            <code>BSCodec_2band/audioset_-0Gj8-vB1q4.wav</code>, …).
+          </p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span></span>
+            How to listen
+          </div>
+          <p class="note">
+            1. Start from the <strong>reference</strong> audio.<br />
+            2. Then switch between BSCodec and baselines on the same segment.<br />
+            3. Focus on speech intelligibility, background details, stereo image,
+            and high-frequency artifacts (warbling, metallic sounds, etc.).
+          </p>
+        </section>
+      </div>
+
+      <!-- 右侧：各个 codec 播放器 -->
+      <section class="players">
+        <div class="players-header">
+          <div>
+            <div class="players-title">Codecs on selected sample</div>
+            <div class="current-sample-name" id="current-sample-name">
+              <!-- filled by JS -->
+            </div>
+          </div>
+          <div class="players-controls">
+            <button class="btn btn-primary" id="btn-play-all">
+              <span class="btn-icon">▶</span>
+              Play / pause all
+            </button>
+            <button class="btn" id="btn-stop-all">
+              <span class="btn-icon">⏹</span>
+              Stop all
+            </button>
+          </div>
+        </div>
+
+        <div class="codec-grid" id="codec-grid">
+          <!-- cards inserted by JS -->
+        </div>
+
+        <div class="footer">
+          <span>Static HTML demo – no tracking, no backend.</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ==============================
+    // 配置：codec 和样本列表
+    // ==============================
+
+    // 仓库中 codec 对应的文件夹名要和这里的 id 完全一致
+    const CODECS = [
+      { id: "ground_truth", name: "Ground Truth", detail: "Reference waveform", type: "ref" },
+
+      // ----- Our method: BSCodec -----
+      { id: "BSCodec_2band", name: "BSCodec (2-band)", detail: "Our method", type: "ours" },
+      { id: "BSCodec_3band", name: "BSCodec (3-band)", detail: "Our method", type: "ours" },
+
+      // ----- Baselines -----
+      { id: "DAC_3kbps", name: "DAC", detail: "3 kbps", type: "baseline" },
+      { id: "DAC_4.5kbps", name: "DAC", detail: "4.5 kbps", type: "baseline" },
+      { id: "DAC_6kbps", name: "DAC", detail: "6 kbps", type: "baseline" },
+
+      { id: "encodec_3kbps", name: "Encodec", detail: "3 kbps", type: "baseline" },
+      { id: "encodec_6kbps", name: "Encodec", detail: "6 kbps", type: "baseline" },
+
+      { id: "FunCodec_2.5kbps", name: "FunCodec", detail: "2.5 kbps", type: "baseline" },
+      { id: "FunCodec_4kbps", name: "FunCodec", detail: "4 kbps", type: "baseline" },
+
+      { id: "MimoTokenizer", name: "MimoTokenizer", detail: "", type: "baseline" },
+      { id: "SemantiCodec", name: "SemantiCodec", detail: "", type: "baseline" },
+      { id: "WavTokenizer", name: "WavTokenizer", detail: "", type: "baseline" },
+      { id: "Xcodec", name: "Xcodec", detail: "", type: "baseline" }
+    ];
+
+    // 你给出的 11 个样本文件名
+    const SAMPLES = [
+      {
+        file: "audioset_-0Gj8-vB1q4.wav",
+        label: "AudioSet -0Gj8-vB1q4",
+        dataset: "AudioSet",
+        description: "General environment sound"
+      },
+      {
+        file: "audioset_-0RWZT-miFs.wav",
+        label: "AudioSet -0RWZT-miFs",
+        dataset: "AudioSet",
+        description: "General environment sound"
+      },
+      {
+        file: "audioset_-0vPFx-wRRI.wav",
+        label: "AudioSet -0vPFx-wRRI",
+        dataset: "AudioSet",
+        description: "General environment sound"
+      },
+      {
+        file: "audioset_-65CfQUX9Ng.wav",
+        label: "AudioSet -65CfQUX9Ng",
+        dataset: "AudioSet",
+        description: "General environment sound"
+      },
+      {
+        file: "audioset_--U7joUcTCo.wav",
+        label: "AudioSet --U7joUcTCo",
+        dataset: "AudioSet",
+        description: "General environment sound"
+      },
+      {
+        file: "libritts_1188_133604_000012_000002.wav",
+        label: "LibriTTS 1188-133604-000012-000002",
+        dataset: "LibriTTS",
+        description: "Read speech"
+      },
+      {
+        file: "libritts_1284_1181_000003_000001.wav",
+        label: "LibriTTS 1284-1181-000003-000001",
+        dataset: "LibriTTS",
+        description: "Read speech"
+      },
+      {
+        file: "libritts_1320_122612_000051_000001.wav",
+        label: "LibriTTS 1320-122612-000051-000001",
+        dataset: "LibriTTS",
+        description: "Read speech"
+      },
+      {
+        file: "musdb18_Al_James_-_Schoolboy_Facination.stem.wav",
+        label: "MUSDB18 – Al James – Schoolboy Facination",
+        dataset: "MUSDB18",
+        description: "Music mixture"
+      },
+      {
+        file: "musdb18_Arise_-_Run_Run_Run.stem.wav",
+        label: "MUSDB18 – Arise – Run Run Run",
+        dataset: "MUSDB18",
+        description: "Music mixture"
+      },
+      {
+        file: "musdb18_Georgia_Wonder_-_Siren.stem.wav",
+        label: "MUSDB18 – Georgia Wonder – Siren",
+        dataset: "MUSDB18",
+        description: "Music mixture"
+      }
+    ];
+
+    // ==============================
+    // 逻辑：渲染下拉框 & 播放器
+    // ==============================
+
+    const sampleSelect = document.getElementById("sample-select");
+    const sampleMetaEl = document.getElementById("sample-meta");
+    const currentSampleNameEl = document.getElementById("current-sample-name");
+    const codecGrid = document.getElementById("codec-grid");
+
+    const btnPlayAll = document.getElementById("btn-play-all");
+    const btnStopAll = document.getElementById("btn-stop-all");
+
+    const audioElements = []; // 存放所有 audio 元素，方便统一控制
+
+    function createOption(sample) {
+      const opt = document.createElement("option");
+      opt.value = sample.file;
+      opt.textContent = sample.label;
+      return opt;
+    }
+
+    function getSampleByFile(fileName) {
+      return SAMPLES.find((s) => s.file === fileName);
+    }
+
+    function audioPath(codecId, fileName) {
+      // 假设仓库中目录结构为 ./codec_id/filename.wav
+      return `${codecId}/${fileName}`;
+    }
+
+    function renderSampleSelect() {
+      SAMPLES.forEach((s) => sampleSelect.appendChild(createOption(s)));
+      // 默认第一个
+      if (SAMPLES.length > 0) {
+        sampleSelect.value = SAMPLES[0].file;
+        updateSampleInfo(SAMPLES[0]);
+      }
+    }
+
+    function updateSampleInfo(sample) {
+      currentSampleNameEl.textContent = sample.label;
+      sampleMetaEl.innerHTML = `
+        <div class="sample-tag">
+          <span class="sample-tag-dot"></span>
+          ${sample.dataset || "Unknown dataset"}
+        </div>
+        <div style="margin-top:4px;">
+          <span>${sample.description || ""}</span><br/>
+          <span>Filename: <code>${sample.file}</code></span>
+        </div>
+      `;
+    }
+
+    function renderCodecGrid(fileName) {
+      codecGrid.innerHTML = "";
+      audioElements.length = 0;
+
+      CODECS.forEach((codec) => {
+        const card = document.createElement("div");
+        card.className = "codec-card";
+
+        const header = document.createElement("div");
+        header.className = "codec-header";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "codec-name";
+        nameEl.textContent = codec.name;
+
+        const rightHeader = document.createElement("div");
+        rightHeader.style.display = "flex";
+        rightHeader.style.alignItems = "center";
+        rightHeader.style.gap = "6px";
+
+        if (codec.detail) {
+          const detailEl = document.createElement("div");
+          detailEl.className = "codec-detail";
+          detailEl.textContent = codec.detail;
+          rightHeader.appendChild(detailEl);
+        }
+
+        const badge = document.createElement("span");
+        badge.className = "badge";
+
+        if (codec.type === "ours") {
+          badge.classList.add("badge-ours");
+          badge.textContent = "Ours";
+        } else if (codec.type === "ref") {
+          badge.classList.add("badge-ref");
+          badge.textContent = "Reference";
+        } else {
+          badge.classList.add("badge-baseline");
+          badge.textContent = "Baseline";
+        }
+
+        rightHeader.appendChild(badge);
+
+        header.appendChild(nameEl);
+        header.appendChild(rightHeader);
+
+        const audioWrap = document.createElement("div");
+        audioWrap.className = "audio-wrap";
+
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "none";
+        audio.src = audioPath(codec.id, fileName);
+
+        audioWrap.appendChild(audio);
+
+        const footer = document.createElement("div");
+        footer.className = "codec-footer";
+
+        const leftInfo = document.createElement("div");
+        leftInfo.textContent = codec.id;
+
+        const rightInfo = document.createElement("div");
+        rightInfo.className = "footer-right";
+        rightInfo.textContent = "WAV";
+
+        footer.appendChild(leftInfo);
+        footer.appendChild(rightInfo);
+
+        card.appendChild(header);
+        card.appendChild(audioWrap);
+        card.appendChild(footer);
+
+        codecGrid.appendChild(card);
+
+        audioElements.push(audio);
+      });
+    }
+
+    function onSampleChange() {
+      const fileName = sampleSelect.value;
+      const s = getSampleByFile(fileName);
+      if (s) {
+        updateSampleInfo(s);
+      }
+      // 切换 sample 时，停止所有当前播放的 audio
+      stopAll();
+      renderCodecGrid(fileName);
+    }
+
+    function playPauseAll() {
+      // 如果有任意一个正在播放，则全部暂停；否则全部播放
+      const anyPlaying = audioElements.some((a) => !a.paused && !a.ended);
+      if (anyPlaying) {
+        audioElements.forEach((a) => a.pause());
+      } else {
+        audioElements.forEach((a) => {
+          a.currentTime = 0;
+          a.play().catch(() => {
+            // 有些浏览器不允许自动播放，这里忽略错误
+          });
+        });
+      }
+    }
+
+    function stopAll() {
+      audioElements.forEach((a) => {
+        a.pause();
+        a.currentTime = 0;
+      });
+    }
+
+    // 绑定事件 + 初始化
+    sampleSelect.addEventListener("change", onSampleChange);
+    btnPlayAll.addEventListener("click", playPauseAll);
+    btnStopAll.addEventListener("click", stopAll);
+
+    // 页面加载时初始化一次
+    renderSampleSelect();
+    if (SAMPLES.length > 0) {
+      renderCodecGrid(SAMPLES[0].file);
+    }
+  </script>
+</body>
+</html>
